@@ -1,0 +1,18 @@
+{
+  "name": "L'œuf — Tennis Companion",
+  "short_name": "L'œuf",
+  "description": "Tennis scorer, match log, racquet spin & more",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f6f2",
+  "theme_color": "#f7f6f2",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

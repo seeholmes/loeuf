@@ -1,0 +1,1738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>L'œuf</title>
+
+<!-- PWA / Home Screen -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="L'œuf">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#f7f6f2">
+<link rel="manifest" href="manifest.json">
+
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f7f6f2;--surface:#fff;--border:#e4e2db;--text:#1a1917;--muted:#888580;
+  --accent:#2d6a4f;--accent-light:#e8f4ee;--accent2:#c9a84c;
+  --danger:#c0392b;--danger-light:#fdecea;--radius:16px;--shadow:0 2px 12px rgba(0,0,0,.06);
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;-webkit-font-smoothing:antialiased}
+.app{display:flex;flex-direction:column;height:100dvh;max-width:480px;margin:0 auto}
+.header{padding:20px 20px 0;display:flex;align-items:baseline;justify-content:space-between;flex-shrink:0}
+.header-logo{font-family:'DM Serif Display',serif;font-size:26px;letter-spacing:-.5px}
+.header-logo .oe{color:var(--accent);font-style:italic}
+.header-logo .apos{color:var(--muted)}
+.header-date{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.screen{display:none;flex-direction:column;flex:1;overflow-y:auto;padding:0 20px 100px}
+.screen.active{display:flex}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:12px;box-shadow:var(--shadow)}
+.card-label{font-family:'DM Mono',monospace;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:12px}
+.section-head{font-family:'DM Serif Display',serif;font-size:22px;margin:8px 0 14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:12px 20px;border-radius:100px;border:none;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s;text-align:center}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:active{background:#235c41}
+.btn-secondary{background:var(--surface);color:var(--text);border:1.5px solid var(--border)}.btn-secondary:active{background:var(--bg)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-full{width:100%}.btn-sm{padding:8px 14px;font-size:13px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;font-weight:500;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;font-family:'DM Mono',monospace}
+.field input,.field select,.field textarea{width:100%;padding:10px 13px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);outline:none;transition:border-color .15s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
+.field textarea{resize:vertical;min-height:70px}
+
+/* ── LIVE SCORER ── */
+.scorer-wrap{margin-bottom:14px}
+.switch-banner{
+  background:var(--accent);color:#fff;border-radius:10px;
+  padding:10px 14px;text-align:center;margin-bottom:12px;
+  font-family:'DM Mono',monospace;font-size:12px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;
+  animation:flashIn .3s ease-out;display:none;
+}
+.switch-banner.show{display:block}
+@keyframes flashIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+.match-over-banner{
+  background:var(--text);color:#fff;border-radius:12px;
+  padding:16px;text-align:center;margin-bottom:12px;
+  animation:flashIn .3s ease-out;
+}
+.mob-title{font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:4px}
+.mob-score{font-family:'DM Mono',monospace;font-size:13px;opacity:.75}
+.match-over-banner .btn-secondary{background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)}
+.spin-choice-guard { pointer-events: none; }
+.tiebreak-badge{
+  background:var(--accent2);color:#fff;border-radius:8px;padding:4px 12px;
+  font-family:'DM Mono',monospace;font-size:11px;font-weight:500;text-align:center;
+  margin-bottom:10px;display:none;letter-spacing:.05em;text-transform:uppercase;
+}
+.tiebreak-badge.show{display:block}
+.score-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px}
+.score-player{background:var(--bg);border-radius:14px;padding:16px 12px 12px;text-align:center;position:relative;transition:all .2s}
+.score-player.you{background:var(--accent-light);border:1.5px solid #a8d5b5}
+.score-player.serving::before{content:'🎾';position:absolute;top:8px;left:10px;font-size:14px}
+.score-player-name{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:2px}
+.score-meta{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:8px;min-height:14px;letter-spacing:.04em}
+.score-sets{font-family:'DM Serif Display',serif;font-size:44px;line-height:1;color:var(--text)}
+.score-games{font-family:'DM Serif Display',serif;font-size:26px;color:var(--muted);margin:2px 0}
+.score-points{font-family:'DM Mono',monospace;font-size:22px;font-weight:500;color:var(--text);min-height:30px}
+.score-points.deuce{color:var(--accent2)}
+.score-points.advantage{color:var(--accent);font-size:18px}
+.point-btn-row{display:flex;gap:8px;margin-top:10px;justify-content:center}
+.point-btn{
+  flex:1;max-width:100px;padding:14px 0;border-radius:12px;
+  border:none;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;
+  cursor:pointer;transition:all .12s;
+}
+.point-btn.you-btn{background:var(--accent);color:#fff}
+.point-btn.you-btn:active{background:#235c41;transform:scale(.97)}
+.point-btn.opp-btn{background:#e8e6e1;color:var(--text)}
+.point-btn.opp-btn:active{background:#d4d2cc;transform:scale(.97)}
+
+.set-history{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.set-pill{font-family:'DM Mono',monospace;font-size:12px;padding:4px 10px;border-radius:100px;background:var(--bg);border:1px solid var(--border);color:var(--muted)}
+.set-pill.won{background:var(--accent-light);border-color:#a8d5b5;color:var(--accent)}
+.match-meta-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.meta-tag{font-family:'DM Mono',monospace;font-size:11px;padding:4px 10px;border-radius:100px;background:var(--bg);border:1px solid var(--border);color:var(--muted)}
+
+/* ── STATS ── */
+.stat-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.stat-box{text-align:center;background:var(--bg);border-radius:12px;padding:12px 8px}
+.stat-val{font-family:'DM Serif Display',serif;font-size:26px}
+.stat-label{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-top:2px}
+.stat-box.accent .stat-val{color:var(--accent)}
+
+/* ── MATCH HISTORY ── */
+.match-row{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
+.match-row:last-child{border-bottom:none}
+.match-row:active{background:var(--bg)}
+.match-result{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
+.match-result.W{background:var(--accent-light);color:var(--accent)}
+.match-result.L{background:var(--danger-light);color:var(--danger)}
+.match-result.D{background:#f0f0f0;color:var(--muted)}
+.match-info{flex:1;min-width:0}
+.match-opp{font-weight:500;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.match-score-str{font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)}
+.match-date-str{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);flex-shrink:0}
+
+/* ── GAME LOG ── */
+.log-table{width:100%;border-collapse:collapse;font-family:'DM Mono',monospace;font-size:11px}
+.log-table th{text-align:left;padding:6px 8px;border-bottom:2px solid var(--border);color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.06em}
+.log-table td{padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
+.log-table tr:last-child td{border-bottom:none}
+.log-table tr.set-break td{background:var(--accent-light);font-weight:600;color:var(--accent)}
+.log-table tr.game-won td{background:#fafaf8}
+.point-won-you{color:var(--accent);font-weight:600}
+.point-won-opp{color:var(--danger);font-weight:600}
+.log-scroll{max-height:55vh;overflow-y:auto}
+
+/* ── LISTEN ── */
+.listen-circle{width:140px;height:140px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;margin:0 auto 20px;border:3px solid var(--border);background:var(--surface);transition:all .2s;position:relative;overflow:hidden;cursor:pointer}
+.listen-circle.listening{border-color:var(--accent);box-shadow:0 0 0 8px var(--accent-light)}
+.listen-circle.pulse::after{content:'';position:absolute;inset:0;border-radius:50%;background:var(--accent-light);animation:ripple .4s ease-out forwards}
+@keyframes ripple{from{opacity:.6;transform:scale(.8)}to{opacity:0;transform:scale(1.2)}}
+.listen-count{font-family:'DM Serif Display',serif;font-size:52px;line-height:1;color:var(--text)}
+.listen-label{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.waveform{display:flex;align-items:center;gap:3px;height:32px;justify-content:center;margin-bottom:16px}
+.wave-bar{width:4px;background:var(--border);border-radius:2px;height:8px;transition:height .1s}
+.wave-bar.active{background:var(--accent)}
+.threshold-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.threshold-row label{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);white-space:nowrap}
+.threshold-row input[type=range]{flex:1;accent-color:var(--accent)}
+.threshold-val{font-family:'DM Mono',monospace;font-size:12px;color:var(--text);width:28px;text-align:right}
+.camera-wrap{position:relative;border-radius:14px;overflow:hidden;background:#111;aspect-ratio:9/16;max-height:340px;width:100%}
+.camera-wrap video{width:100%;height:100%;object-fit:cover}
+.camera-wrap canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.camera-overlay{position:absolute;bottom:12px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:flex-end}
+.speed-badge{background:rgba(0,0,0,.72);backdrop-filter:blur(8px);color:#fff;border-radius:10px;padding:8px 14px;font-family:'DM Serif Display',serif;font-size:28px}
+.speed-badge small{font-family:'DM Mono',monospace;font-size:11px;display:block;color:rgba(255,255,255,.6)}
+.serve-log{max-height:140px;overflow-y:auto}
+.serve-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:12px}
+.serve-row:last-child{border-bottom:none}
+.serve-mph{font-size:15px;font-weight:500;color:var(--accent)}
+.serve-mph.fast{color:var(--accent2)}
+
+/* ── RACQUET ── */
+.racquet-wrap{text-align:center;padding:16px 0 8px}
+.racquet-svg-container{width:80px;height:160px;margin:0 auto 20px;cursor:pointer;position:relative}
+.racquet-svg-container svg{width:100%;height:100%;filter:drop-shadow(0 6px 18px rgba(45,106,79,.18));transition:filter .2s}
+.racquet-svg-container.spinning svg{animation:racquetFlip 1.1s cubic-bezier(.25,.46,.45,.94)}
+@keyframes racquetFlip{0%{transform:rotateX(0)translateY(0)}15%{transform:rotateX(0)translateY(-12px)}50%{transform:rotateX(540deg)translateY(-30px)}85%{transform:rotateX(1020deg)translateY(-8px)}100%{transform:rotateX(1080deg)translateY(0)}}
+.racquet-tap-hint{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:16px;text-transform:uppercase;letter-spacing:.07em}
+.spin-result{font-family:'DM Serif Display',serif;font-size:22px;min-height:32px;color:var(--text)}
+.spin-result.revealed{animation:fadeUp .3s ease-out forwards}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── GEAR ── */
+.gear-row{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer}
+.gear-row:last-child{border-bottom:none}
+.gear-icon{width:40px;height:40px;border-radius:10px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.gear-info{flex:1;min-width:0}
+.gear-name{font-weight:500;font-size:14px}
+.gear-sub{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-top:2px}
+.gear-badge{font-family:'DM Mono',monospace;font-size:11px;padding:3px 8px;border-radius:100px}
+.gear-badge.ok{background:var(--accent-light);color:var(--accent)}
+.gear-badge.due{background:#fff3cd;color:#856404}
+.gear-badge.overdue{background:var(--danger-light);color:var(--danger)}
+
+/* ── PLAYER LIST ── */
+.player-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.player-row:last-child{border-bottom:none}
+.player-name-display{flex:1;font-size:14px}
+.player-edit-input{flex:1;padding:6px 10px;border-radius:8px;border:1.5px solid var(--accent);background:var(--bg);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);outline:none}
+.icon-btn{width:30px;height:30px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .12s;flex-shrink:0}
+.icon-btn.del:active{background:var(--danger-light);border-color:var(--danger)}
+.add-player-row{display:flex;gap:8px;margin-top:10px}
+.add-player-row input{flex:1;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);outline:none}
+.add-player-row input:focus{border-color:var(--accent)}
+.opp-combo{position:relative}
+.opp-combo input{width:100%;padding:10px 36px 10px 13px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);outline:none;transition:border-color .15s}
+.opp-combo input:focus{border-color:var(--accent)}
+.opp-combo-arrow{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--muted);pointer-events:none}
+.opp-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);z-index:200;overflow:hidden;display:none}
+.opp-dropdown.open{display:block}
+.opp-option{padding:11px 14px;font-size:14px;cursor:pointer;transition:background .1s}
+.opp-option:active{background:var(--bg)}
+.opp-option:not(:last-child){border-bottom:1px solid var(--border)}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(3px);z-index:100;display:none;align-items:flex-end;justify-content:center}
+.modal-backdrop.open{display:flex}
+.modal{background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px 40px;width:100%;max-width:480px;max-height:90dvh;overflow-y:auto;animation:slideUp .25s ease-out}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px}
+.modal-title{font-family:'DM Serif Display',serif;font-size:20px;margin-bottom:18px}
+.modal-actions{display:flex;gap:8px;margin-top:18px}
+.empty{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-icon{font-size:40px;margin-bottom:12px}
+.empty p{font-size:14px;line-height:1.5}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%)translateY(20px);background:var(--text);color:#fff;border-radius:100px;padding:10px 20px;font-size:13px;font-weight:500;opacity:0;transition:all .25s;z-index:300;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%)translateY(0)}
+.divider{height:1px;background:var(--border);margin:16px 0}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pill-select{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.pill{padding:6px 12px;border-radius:100px;border:1.5px solid var(--border);font-size:13px;cursor:pointer;transition:all .12s;background:var(--surface);color:var(--muted);user-select:none}
+.pill.selected{background:var(--text);color:#fff;border-color:var(--text)}
+.notice{background:var(--accent-light);border:1px solid #a8d5b5;border-radius:10px;padding:12px 14px;font-size:13px;color:#1a4d35;line-height:1.5;margin-bottom:14px}
+.notice.warn{background:#fff3cd;border-color:#ffc107;color:#664d03}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:rgba(247,246,242,.92);backdrop-filter:blur(12px);border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(4,1fr);padding:8px 0 max(8px,env(safe-area-inset-bottom));z-index:50}
+.bnav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:6px 0;color:var(--muted);transition:color .15s}
+.bnav-btn.active{color:var(--accent)}
+.bnav-btn svg{width:22px;height:22px}
+.bnav-label{font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.06em}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-logo"><span class="apos">L'</span><span class="oe">œ</span>uf</div>
+    <div class="header-date" id="headerDate"></div>
+  </div>
+
+  <!-- ══ MATCH ══ -->
+  <div class="screen active" id="screen-match">
+    <div class="section-head">Match</div>
+    <div class="card">
+      <div class="card-label">Live Score</div>
+      <div class="match-meta-row" id="liveMatchMeta" style="display:none"></div>
+      <div class="switch-banner" id="switchBanner">⇄ Switch Ends</div>
+      <div class="match-over-banner" id="matchOverBanner" style="display:none">
+        <div class="mob-title" id="mobTitle">Match Over</div>
+        <div class="mob-score" id="mobScore"></div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
+          <button class="btn btn-primary btn-sm" onclick="saveCurrentMatch()">Save Result</button>
+          <button class="btn btn-secondary btn-sm" onclick="dismissMatchOver()">Keep Playing</button>
+        </div>
+      </div>
+      <div class="tiebreak-badge" id="tiebreakBadge">Tiebreak</div>
+      <div class="scorer-wrap">
+        <div class="score-grid">
+          <div class="score-player you" id="sp1">
+            <div class="score-player-name" id="p1Name">You</div>
+            <div class="score-meta" id="p1Meta"></div>
+            <div class="score-sets" id="p1Sets">0</div>
+            <div class="score-games" id="p1Games">0</div>
+            <div class="score-points" id="p1Points">0</div>
+            <div class="point-btn-row">
+              <button class="point-btn you-btn" onclick="awardPoint('p1')">+ You</button>
+            </div>
+          </div>
+          <div class="score-player" id="sp2">
+            <div class="score-player-name" id="p2Name">Opp</div>
+            <div class="score-meta" id="p2Meta"></div>
+            <div class="score-sets" id="p2Sets">0</div>
+            <div class="score-games" id="p2Games">0</div>
+            <div class="score-points" id="p2Points">0</div>
+            <div class="point-btn-row">
+              <button class="point-btn opp-btn" onclick="awardPoint('p2')">+ Opp</button>
+            </div>
+          </div>
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);text-align:center;margin:4px 0 8px;letter-spacing:.05em;text-transform:uppercase">Sets · Games · Points</div>
+        <div class="set-history" id="setHistory"></div>
+      </div>
+      <div class="divider"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-primary btn-sm" onclick="openNewMatch()">New Match</button>
+        <button class="btn btn-secondary btn-sm" onclick="undoPoint()">↩ Undo</button>
+        <button class="btn btn-secondary btn-sm" onclick="saveCurrentMatch()">Save & End</button>
+        <button class="btn btn-secondary btn-sm" onclick="resetScore()">Reset</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Season Stats</div>
+      <div class="stat-row">
+        <div class="stat-box accent"><div class="stat-val" id="statWins">0</div><div class="stat-label">Wins</div></div>
+        <div class="stat-box"><div class="stat-val" id="statLosses">0</div><div class="stat-label">Losses</div></div>
+        <div class="stat-box"><div class="stat-val" id="statWinPct">—</div><div class="stat-label">Win %</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Match History — tap for game log</div>
+      <div id="matchHistory"><div class="empty"><div class="empty-icon">🎾</div><p>No matches yet.<br>Start a new match above.</p></div></div>
+    </div>
+  </div>
+
+  <!-- ══ LISTEN ══ -->
+  <div class="screen" id="screen-listen">
+    <div class="section-head">Watch & Listen</div>
+    <div class="card">
+      <div class="card-label">Rally Counter — Mic</div>
+      <div class="notice">Counts ball bounces via microphone. Works best near the court. Tap circle to start/stop.</div>
+      <div class="listen-circle" id="listenCircle" onclick="toggleListen()">
+        <div class="listen-count" id="rallyCount">0</div>
+        <div class="listen-label" id="listenLabel">tap to start</div>
+      </div>
+      <div class="waveform" id="waveform">
+        <div class="wave-bar" style="height:6px"></div><div class="wave-bar" style="height:10px"></div>
+        <div class="wave-bar" style="height:8px"></div><div class="wave-bar" style="height:14px"></div>
+        <div class="wave-bar" style="height:7px"></div><div class="wave-bar" style="height:12px"></div>
+        <div class="wave-bar" style="height:9px"></div><div class="wave-bar" style="height:16px"></div>
+        <div class="wave-bar" style="height:8px"></div><div class="wave-bar" style="height:11px"></div>
+        <div class="wave-bar" style="height:7px"></div><div class="wave-bar" style="height:9px"></div>
+      </div>
+      <div class="threshold-row">
+        <label>Sensitivity</label>
+        <input type="range" id="threshSlider" min="5" max="40" value="18" oninput="updateThreshold(this.value)">
+        <span class="threshold-val" id="threshVal">18</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <div id="listenStatus" style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);flex:1">Idle</div>
+        <button class="btn btn-secondary btn-sm" onclick="resetRally()">Reset</button>
+        <button class="btn btn-secondary btn-sm" onclick="logRally()">Log Rally</button>
+      </div>
+      <div id="rallyLog" style="margin-top:14px"></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Serve Speed — Camera</div>
+      <div class="notice warn">Experimental. Place phone on fence/tripod. Estimates speed via motion detection. Accuracy ±15 mph.</div>
+      <div class="camera-wrap" id="cameraWrap" style="display:none">
+        <video id="serveVideo" autoplay playsinline muted></video>
+        <canvas id="serveCanvas"></canvas>
+        <div class="camera-overlay">
+          <div class="speed-badge"><div id="liveSpeed">—</div><small>mph est.</small></div>
+        </div>
+      </div>
+      <div id="cameraPlaceholder" style="text-align:center;padding:20px 0">
+        <div style="font-size:48px;margin-bottom:10px">📷</div>
+        <p id="cameraPlaceholderMsg" style="color:var(--muted);font-size:13px;margin-bottom:14px">Camera not started</p>
+      </div>
+      <div id="cameraPermError" style="display:none;background:#fdecea;border:1px solid #e8a8a3;border-radius:10px;padding:12px 14px;font-size:13px;color:#7b2020;line-height:1.6;margin-bottom:12px">
+        <b>Camera access denied.</b><br><br>
+        <b>Quickest fix:</b> Tap the <b>AA</b> icon in the Safari address bar → Website Settings → Camera → Allow<br><br>
+        <b>Or:</b> Settings → Apps → Safari → Camera → Allow<br><br>
+        Then tap Start Camera again.
+      </div>
+      <div class="field"><label>Court Width Reference (ft)</label><input type="number" id="courtWidthFt" value="27" min="10" max="40" step="1"></div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+        <button class="btn btn-primary btn-sm" id="cameraBtn" onclick="toggleCamera()">Start Camera</button>
+        <button class="btn btn-secondary btn-sm" onclick="clearServeLog()">Clear Log</button>
+      </div>
+      <div class="serve-log" id="serveLog"><div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);text-align:center;padding:12px">No serves recorded yet</div></div>
+    </div>
+  </div>
+
+  <!-- ══ UTILS ══ -->
+  <div class="screen" id="screen-util">
+    <div class="section-head">Utilities</div>
+    <div class="card">
+      <div class="card-label">Spin the Racquet</div>
+      <div class="racquet-wrap">
+        <div class="racquet-svg-container" id="racquetContainer" onclick="spinRacquet()">
+          <svg viewBox="0 0 80 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="34" y="110" width="12" height="42" rx="5" fill="#8B6340"/>
+            <rect x="34" y="113" width="12" height="2.5" rx="1" fill="#6b4c2a" opacity="0.5"/>
+            <rect x="34" y="119" width="12" height="2.5" rx="1" fill="#6b4c2a" opacity="0.5"/>
+            <rect x="34" y="125" width="12" height="2.5" rx="1" fill="#6b4c2a" opacity="0.5"/>
+            <rect x="34" y="131" width="12" height="2.5" rx="1" fill="#6b4c2a" opacity="0.5"/>
+            <rect x="34" y="137" width="12" height="2.5" rx="1" fill="#6b4c2a" opacity="0.5"/>
+            <rect x="34" y="143" width="12" height="2.5" rx="1" fill="#6b4c2a" opacity="0.5"/>
+            <rect x="32" y="149" width="16" height="5" rx="3" fill="#5a3e28"/>
+            <path d="M36 110 C34 100 30 92 30 82 L50 82 C50 92 46 100 44 110 Z" fill="#2d6a4f"/>
+            <ellipse cx="40" cy="52" rx="26" ry="34" fill="none" stroke="#2d6a4f" stroke-width="6"/>
+            <line x1="16" y1="30" x2="64" y2="30" stroke="#c9a84c" stroke-width="1.2" opacity="0.7"/>
+            <line x1="14" y1="38" x2="66" y2="38" stroke="#c9a84c" stroke-width="1.2" opacity="0.7"/>
+            <line x1="14" y1="46" x2="66" y2="46" stroke="#c9a84c" stroke-width="1.2" opacity="0.7"/>
+            <line x1="14" y1="54" x2="66" y2="54" stroke="#c9a84c" stroke-width="1.2" opacity="0.7"/>
+            <line x1="15" y1="62" x2="65" y2="62" stroke="#c9a84c" stroke-width="1.2" opacity="0.7"/>
+            <line x1="18" y1="70" x2="62" y2="70" stroke="#c9a84c" stroke-width="1.2" opacity="0.7"/>
+            <line x1="22" y1="78" x2="58" y2="78" stroke="#c9a84c" stroke-width="1.2" opacity="0.7"/>
+            <line x1="26" y1="18" x2="26" y2="82" stroke="#c9a84c" stroke-width="1.2" opacity="0.7"/>
+            <line x1="33" y1="18" x2="33" y2="82" stroke="#c9a84c" stroke-width="1.2" opacity="0.7"/>
+            <line x1="40" y1="18" x2="40" y2="82" stroke="#c9a84c" stroke-width="1.2" opacity="0.7"/>
+            <line x1="47" y1="18" x2="47" y2="82" stroke="#c9a84c" stroke-width="1.2" opacity="0.7"/>
+            <line x1="54" y1="18" x2="54" y2="82" stroke="#c9a84c" stroke-width="1.2" opacity="0.7"/>
+            <ellipse cx="40" cy="52" rx="26" ry="34" fill="none" stroke="#2d6a4f" stroke-width="6"/>
+            <ellipse cx="40" cy="18" rx="8" ry="3" fill="#1a4d35"/>
+          </svg>
+        </div>
+        <div class="racquet-tap-hint" id="spinHint">Tap to spin</div>
+        <div class="spin-result" id="spinResult"></div>
+      </div>
+      <!-- Step 2: winner chooses -->
+      <div id="spinChoicePanel" style="display:none;margin-bottom:12px">
+        <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;text-align:center" id="spinChoiceLabel"></div>
+        <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" onclick="spinChoose('serve')">Serve</button>
+          <button class="btn btn-secondary btn-sm" onclick="spinChoose('receive')">Receive</button>
+          <button class="btn btn-secondary btn-sm" onclick="spinChoose('end')">Pick End</button>
+        </div>
+      </div>
+      <!-- Step 3: outcome -->
+      <div id="spinOutcomePanel" style="display:none;margin-bottom:4px">
+        <div style="font-family:'DM Serif Display',serif;font-size:18px;text-align:center;margin-bottom:6px" id="spinOutcomeLine1"></div>
+        <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);text-align:center" id="spinOutcomeLine2"></div>
+        <div style="text-align:center;margin-top:10px">
+          <button class="btn btn-secondary btn-sm" onclick="resetSpin()">Spin Again</button>
+        </div>
+      </div>
+      <!-- Step 3b: loser picks serve or receive (when winner chose end) -->
+      <div id="spinLoserPanel" style="display:none;margin-bottom:12px">
+        <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;text-align:center" id="spinLoserLabel"></div>
+        <div style="display:flex;gap:8px;justify-content:center">
+          <button class="btn btn-primary btn-sm" onclick="spinLoserChoose('serve')">Serve</button>
+          <button class="btn btn-secondary btn-sm" onclick="spinLoserChoose('receive')">Receive</button>
+        </div>
+      </div>
+      <!-- Step 3c: loser picks end (when winner chose serve or receive) -->
+      <div id="spinEndPanel" style="display:none;margin-bottom:12px">
+        <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;text-align:center" id="spinEndLabel"></div>
+        <div style="display:flex;gap:8px;justify-content:center">
+          <button class="btn btn-primary btn-sm" onclick="spinEndChoose('north')">North End</button>
+          <button class="btn btn-secondary btn-sm" onclick="spinEndChoose('south')">South End</button>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="field">
+        <label>Opponent</label>
+        <div class="opp-combo" id="spinOppCombo">
+          <input type="text" id="spinP2" placeholder="Pick or type opponent…" autocomplete="off"
+            oninput="filterSpinDropdown()" onfocus="openSpinDropdown()" onblur="closeSpinDropdownDelayed()" onchange="setCurrentOpponent(this.value)">
+          <span class="opp-combo-arrow">▾</span>
+          <div class="opp-dropdown" id="spinOppDropdown"></div>
+        </div>
+      </div>
+      <div id="spinSyncNote" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);margin-top:-8px;margin-bottom:4px;display:none">✓ Synced with current match</div>
+    </div>
+    <div class="card">
+      <div class="card-label">String & Gear Log</div>
+      <div id="gearList"><div class="empty"><div class="empty-icon">🎾</div><p>No gear logged yet.</p></div></div>
+      <div class="divider"></div>
+      <button class="btn btn-primary btn-full" onclick="openAddGear()">+ Add Racquet / Gear</button>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="bnav-btn active" onclick="switchScreen('match',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span class="bnav-label">Match</span>
+    </button>
+    <button class="bnav-btn" onclick="switchScreen('listen',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M7.76 7.76a6 6 0 0 0 0 8.49"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49"/></svg>
+      <span class="bnav-label">Listen</span>
+    </button>
+    <button class="bnav-btn" onclick="switchScreen('util',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      <span class="bnav-label">Utils</span>
+    </button>
+    <button class="bnav-btn" onclick="openSettings()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span class="bnav-label">Settings</span>
+    </button>
+  </nav>
+</div>
+
+<!-- MODAL: New Match -->
+<div class="modal-backdrop" id="modal-newmatch">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">New Match</div>
+    <div class="field">
+      <label>Opponent</label>
+      <div class="opp-combo">
+        <input type="text" id="nm-opp" placeholder="Name or pick from list" autocomplete="off" oninput="filterOppDropdown()" onfocus="openOppDropdown()" onblur="closeOppDropdownDelayed()">
+        <span class="opp-combo-arrow">▾</span>
+        <div class="opp-dropdown" id="oppDropdown"></div>
+      </div>
+    </div>
+    <div class="field"><label>Who Serves First</label>
+      <div class="pill-select" id="nm-server">
+        <div class="pill selected" id="nm-server-you" onclick="selectPill(this,'nm-server')">You</div>
+        <div class="pill" id="nm-server-opp" onclick="selectPill(this,'nm-server')">Opponent</div>
+      </div>
+      <div id="spinServePrefill" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);margin-top:6px;display:none">✓ Pre-filled from racquet spin</div>
+    </div>
+    <div class="field"><label>Surface</label>
+      <div class="pill-select" id="nm-surface">
+        <div class="pill selected" onclick="selectPill(this,'nm-surface')">Hard</div>
+        <div class="pill" onclick="selectPill(this,'nm-surface')">Clay</div>
+        <div class="pill" onclick="selectPill(this,'nm-surface')">Grass</div>
+        <div class="pill" onclick="selectPill(this,'nm-surface')">Indoor</div>
+      </div>
+    </div>
+    <div class="field"><label>Format</label>
+      <div class="pill-select" id="nm-format">
+        <div class="pill selected" onclick="selectPill(this,'nm-format')">Best of 3</div>
+        <div class="pill" onclick="selectPill(this,'nm-format')">1 Set</div>
+        <div class="pill" onclick="selectPill(this,'nm-format')">Pro Set</div>
+      </div>
+    </div>
+    <div class="field"><label>Notes</label><textarea id="nm-notes" placeholder="e.g. windy, new strings..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" style="flex:1" onclick="startNewMatch()">Start</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-newmatch')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Match Log -->
+<div class="modal-backdrop" id="modal-matchlog">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="ml-title"></div>
+    <div id="ml-summary" style="margin-bottom:14px;font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)"></div>
+    <div class="log-scroll">
+      <table class="log-table" id="ml-table">
+        <thead><tr><th>#</th><th>Server</th><th>Point</th><th>Score</th><th>Game</th><th>Set</th></tr></thead>
+        <tbody id="ml-tbody"></tbody>
+      </table>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary btn-sm" onclick="exportCSV()">Export CSV</button>
+      <button class="btn btn-secondary" style="flex:1" onclick="closeModal('modal-matchlog')">Close</button>
+      <button class="btn btn-danger btn-sm" id="deleteMatchBtn" onclick="confirmDeleteMatch()">Delete</button>
+      <button class="btn btn-danger btn-sm" id="deleteMatchConfirmBtn" style="display:none" onclick="deleteMatch()">Confirm?</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Add Gear -->
+<div class="modal-backdrop" id="modal-addgear">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="gearModalTitle">Add Gear</div>
+    <div class="field"><label>Name / Model</label><input type="text" id="g-name" placeholder="e.g. Wilson Blade 98"></div>
+    <div class="field"><label>Type</label>
+      <div class="pill-select" id="g-type">
+        <div class="pill selected" onclick="selectPill(this,'g-type')">Racquet</div>
+        <div class="pill" onclick="selectPill(this,'g-type')">String</div>
+        <div class="pill" onclick="selectPill(this,'g-type')">Shoes</div>
+        <div class="pill" onclick="selectPill(this,'g-type')">Bag</div>
+        <div class="pill" onclick="selectPill(this,'g-type')">Other</div>
+      </div>
+    </div>
+    <div class="field"><label>String / Tension</label><input type="text" id="g-string" placeholder="e.g. Luxilon ALU 55 lbs"></div>
+    <div class="field"><label>Last Restrung</label><input type="date" id="g-date"></div>
+    <div class="field"><label>Restring Interval (weeks)</label><input type="number" id="g-interval" placeholder="e.g. 6" min="1"></div>
+    <div class="field"><label>Notes</label><textarea id="g-notes" placeholder="Grip size, weight, mods..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" style="flex:1" onclick="saveGear()">Save</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-addgear')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Gear Detail -->
+<div class="modal-backdrop" id="modal-geardetail">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="gd-title"></div>
+    <div id="gd-body" style="font-size:14px;line-height:1.7;color:var(--muted)"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" style="flex:1" onclick="editGear()">Edit</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteGear()">Delete</button>
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-geardetail')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Settings -->
+<div class="modal-backdrop" id="modal-settings">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Settings</div>
+    <div class="field"><label>Your Name</label><input type="text" id="s-name" placeholder="e.g. Craig"></div>
+    <div class="field"><label>Default NTRP Rating</label>
+      <div class="pill-select" id="s-ntrp">
+        <div class="pill" onclick="selectPill(this,'s-ntrp')">2.5</div>
+        <div class="pill" onclick="selectPill(this,'s-ntrp')">3.0</div>
+        <div class="pill" onclick="selectPill(this,'s-ntrp')">3.5</div>
+        <div class="pill selected" onclick="selectPill(this,'s-ntrp')">4.0</div>
+        <div class="pill" onclick="selectPill(this,'s-ntrp')">4.5</div>
+        <div class="pill" onclick="selectPill(this,'s-ntrp')">5.0</div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div style="font-family:'DM Mono',monospace;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px">Player List</div>
+    <div id="playerList"></div>
+    <div class="add-player-row">
+      <input type="text" id="newPlayerInput" placeholder="Add opponent name..." onkeydown="if(event.key==='Enter')addPlayer()">
+      <button class="btn btn-primary btn-sm" onclick="addPlayer()">Add</button>
+    </div>
+    <div class="divider"></div>
+    <button class="btn btn-danger btn-sm" onclick="clearAllData()">Clear All Data</button>
+    <div class="modal-actions">
+      <button class="btn btn-primary" style="flex:1" onclick="saveSettings()">Save</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-settings')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+let state = {
+  settings: { name: 'You', ntrp: '4.0' },
+  players: [],
+  matches: [],
+  gear: [],
+  currentMatch: null,
+  currentOpponent: null,
+  spinWinner: null,   // 'p1' or 'p2' — from racquet spin
+  rallyLog: [],
+  serveLog: [],
+  editingGearId: null,
+  // Live match engine
+  live: null,         // null when no match in progress
+};
+
+// live match shape:
+// {
+//   server: 'p1'|'p2',           // who serves this game
+//   initialServer: 'p1'|'p2',    // who served game 1
+//   p1Points: 0..7,              // raw point count (0=Love,1=15,2=30,3=40+)
+//   p2Points: 0,
+//   p1Games: 0,                  // games in current set
+//   p2Games: 0,
+//   p1Sets: 0,
+//   p2Sets: 0,
+//   sets: [{p1,p2,tb?}],         // completed sets
+//   totalGames: 0,               // total games played (for end-switch logic)
+//   isTiebreak: false,
+//   tbServer: 'p1'|'p2',         // who serves next in tiebreak
+//   tbPointCount: 0,             // total tiebreak points served
+//   format: 'Best of 3'|'1 Set'|'Pro Set',
+//   pointLog: [{n,server,winner,scoreBefore,gameScore,setScore,type,ts}]
+// }
+
+function save() { try { localStorage.setItem('loeuf_v2', JSON.stringify(state)); } catch(e){} }
+function load() {
+  try {
+    const d = localStorage.getItem('loeuf_v2');
+    if (d) {
+      const loaded = JSON.parse(d);
+      state = Object.assign(state, loaded);
+    }
+    if (!state.settings) state.settings = { name: 'You', ntrp: '4.0' };
+    if (!state.players) state.players = [];
+    if (!state.matches) state.matches = [];
+    if (!state.gear) state.gear = [];
+    if (!state.rallyLog) state.rallyLog = [];
+    if (!state.serveLog) state.serveLog = [];
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TENNIS SCORING ENGINE
+// ═══════════════════════════════════════════════════════════════
+const PT_LABELS = ['0','15','30','40'];
+
+function ptLabel(n, isTiebreak) {
+  if (isTiebreak) return String(n);
+  return PT_LABELS[Math.min(n, 3)];
+}
+
+function getPointDisplay(live) {
+  const { p1Points: p1, p2Points: p2, isTiebreak } = live;
+  if (isTiebreak) {
+    return { p1: String(p1), p2: String(p2), isDeuceState: false, p1Adv: false, p2Adv: false };
+  }
+  const deuce = p1 >= 3 && p2 >= 3;
+  if (deuce) {
+    if (p1 === p2) return { p1: 'D', p2: 'D', isDeuceState: true, p1Adv: false, p2Adv: false };
+    if (p1 > p2)  return { p1: 'Ad', p2: '', isDeuceState: false, p1Adv: true,  p2Adv: false };
+    return           { p1: '',   p2: 'Ad', isDeuceState: false, p1Adv: false, p2Adv: true };
+  }
+  return { p1: PT_LABELS[p1], p2: PT_LABELS[p2], isDeuceState: false, p1Adv: false, p2Adv: false };
+}
+
+function isGameWon(live) {
+  const { p1Points: p1, p2Points: p2, isTiebreak } = live;
+  if (isTiebreak) {
+    const target = live.format === 'Pro Set' ? 7 : 7;
+    return (p1 >= target && p1 >= p2 + 2) || (p2 >= target && p2 >= p1 + 2);
+  }
+  // standard: first to 4, win by 2
+  return (p1 >= 4 && p1 >= p2 + 2) || (p2 >= 4 && p2 >= p1 + 2);
+}
+
+function gameWinner(live) {
+  return live.p1Points > live.p2Points ? 'p1' : 'p2';
+}
+
+function isSetWon(p1g, p2g, format) {
+  if (format === 'Pro Set') {
+    return (p1g >= 8 && p1g >= p2g + 2) || (p2g >= 8 && p2g >= p1g + 2)
+        || (p1g >= 9 && p1g > p2g) || (p2g >= 9 && p2g > p1g); // tiebreak at 8-8
+  }
+  // Standard: first to 6, win by 2; OR 7-5; tiebreak at 6-6
+  return (p1g >= 6 && p1g >= p2g + 2) || (p2g >= 6 && p2g >= p1g + 2) || p1g === 7 || p2g === 7;
+}
+
+function shouldStartTiebreak(p1g, p2g, format) {
+  if (format === 'Pro Set') return p1g === 8 && p2g === 8;
+  return p1g === 6 && p2g === 6;
+}
+
+// Returns true if side-switch should happen AFTER this game ends
+// Switch after game 1, then every 2 games. Also at tiebreak every 6 pts.
+function shouldSwitchEnds(totalGames) {
+  // After game 1, then after every odd total-games count
+  return totalGames % 2 === 1;
+}
+
+// Who serves next game (rotates every game; tiebreak rotation handled separately)
+function nextServer(current) { return current === 'p1' ? 'p2' : 'p1'; }
+
+// Receiving side: receiver starts on deuce side; each point flips
+// Returns 'deuce' or 'ad' for each player based on point count
+function getSide(live, player) {
+  if (live.isTiebreak) return ''; // tiebreak sides are complex; skip
+  const totalPoints = live.p1Points + live.p2Points;
+  // even total pts = deuce side for receiver / ad side for server? 
+  // Actually: server starts on deuce side at 0-0, then alternates each point
+  const serverOnDeuce = totalPoints % 2 === 0;
+  const isServer = live.server === player;
+  if (isServer) return serverOnDeuce ? 'Deuce' : 'Ad';
+  return serverOnDeuce ? 'Ad' : 'Deuce';
+}
+
+// Returns 'North' or 'South' for each player.
+// p1StartEnd is set from the pre-match toss; switches after each odd total game count.
+function getEnd(live, player) {
+  const base = live.p1StartEnd || 'north'; // default North if not set
+  // flip base after each odd game count
+  const flipped = live.totalGames % 2 === 1;
+  const p1End = flipped ? (base === 'north' ? 'South' : 'North') : (base === 'north' ? 'North' : 'South');
+  const p2End = p1End === 'North' ? 'South' : 'North';
+  return player === 'p1' ? p1End : p2End;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AWARD POINT
+// ═══════════════════════════════════════════════════════════════
+function awardPoint(winner) {
+  if (!state.live) { toast('Start a match first'); return; }
+  if (state.live.matchOver) { toast('Match is over — save or reset'); return; }
+  const live = state.live;
+
+  // snapshot score before
+  const scoreBefore = {
+    p1Points: live.p1Points, p2Points: live.p2Points,
+    p1Games: live.p1Games, p2Games: live.p2Games,
+    p1Sets: live.p1Sets, p2Sets: live.p2Sets,
+    isTiebreak: live.isTiebreak
+  };
+
+  // log entry
+  const pointNum = live.pointLog.length + 1;
+  const pd = getPointDisplay(live);
+  const logEntry = {
+    n: pointNum,
+    server: live.isTiebreak ? live.tbServer : live.server,
+    winner,
+    scoreBefore: JSON.parse(JSON.stringify(scoreBefore)),
+    gameScore: pd.p1 + '-' + pd.p2,
+    setScore: live.p1Games + '-' + live.p2Games,
+    matchScore: live.p1Sets + '-' + live.p2Sets,
+    type: live.isTiebreak ? 'tiebreak' : (pd.isDeuceState ? 'deuce' : (pd.p1Adv||pd.p2Adv ? 'advantage' : 'normal')),
+    ts: Date.now()
+  };
+
+  // award point
+  if (winner === 'p1') live.p1Points++; else live.p2Points++;
+
+  // tiebreak serve rotation: first server serves 1 pt, then alternate every 2
+  // switch ends every 6 total tiebreak points
+  if (live.isTiebreak) {
+    live.tbPointCount++;
+    // rotate server: switch after pt 1, then every 2 pts after that
+    if (live.tbPointCount === 1) {
+      live.tbServer = nextServer(live.tbServer);
+    } else if ((live.tbPointCount - 1) % 2 === 0) {
+      live.tbServer = nextServer(live.tbServer);
+    }
+    // tiebreak end switch every 6 points
+    if (live.tbPointCount % 6 === 0 && !isGameWon(live)) {
+      switchEnds = true;
+    }
+  }
+
+  let switchEnds = false;
+  let gameWon = false;
+  let setWon = false;
+  let matchOver = false;
+
+  if (isGameWon(live)) {
+    gameWon = true;
+    const gw = gameWinner(live);
+    live.pointLog.push({ ...logEntry, gameWon: true });
+
+    if (live.isTiebreak) {
+      // tiebreak won — record set score
+      const tbScore = { p1: live.p1Points, p2: live.p2Points };
+      // set score is 7-6 (winner gets the 7th game)
+      const setP1 = gw === 'p1' ? live.p1Games + 1 : live.p1Games;
+      const setP2 = gw === 'p2' ? live.p2Games + 1 : live.p2Games;
+      live.sets.push({ p1: setP1, p2: setP2, tbScore });
+      if (gw === 'p1') live.p1Sets++; else live.p2Sets++;
+      // totalGames already incremented per game throughout set; just add 1 for the TB game
+      live.totalGames++;
+      live.p1Games = 0; live.p2Games = 0;
+      live.p1Points = 0; live.p2Points = 0;
+      live.isTiebreak = false;
+      live.tbPointCount = 0;
+      setWon = true;
+      switchEnds = true;
+      // After tiebreak: the player who RECEIVED the first tiebreak point serves first next set
+      // tbInitialServer served the first point, so the receiver starts next set
+      live.server = nextServer(live.tbInitialServer);
+    } else {
+      // normal game won — increment game count
+      if (gw === 'p1') live.p1Games++; else live.p2Games++;
+      live.p1Points = 0; live.p2Points = 0;
+      live.totalGames++;
+
+      // check set won
+      if (isSetWon(live.p1Games, live.p2Games, live.format)) {
+        setWon = true;
+        live.sets.push({ p1: live.p1Games, p2: live.p2Games });
+        if (live.p1Games > live.p2Games) live.p1Sets++; else live.p2Sets++;
+        live.p1Games = 0; live.p2Games = 0;
+        switchEnds = true;
+      } else if (shouldStartTiebreak(live.p1Games, live.p2Games, live.format)) {
+        // tiebreak starts — next due server begins it
+        live.isTiebreak = true;
+        live.tbInitialServer = nextServer(live.server); // server rotates after this game (line below), so pre-rotate = next server
+        live.tbServer = live.tbInitialServer;
+        live.tbPointCount = 0;
+      } else {
+        // regular game — switch ends after odd total games (after game 1, 3, 5...)
+        if (shouldSwitchEnds(live.totalGames)) switchEnds = true;
+      }
+      // rotate server every game
+      live.server = nextServer(live.server);
+    }
+
+    // check match over
+    const setsToWin = live.format === 'Best of 3' ? 2 : (live.format === '1 Set' ? 1 : 1);
+    if (live.p1Sets >= setsToWin || live.p2Sets >= setsToWin) matchOver = true;
+
+  } else {
+    live.pointLog.push(logEntry);
+  }
+
+  logEntry.switchEnds = switchEnds;
+  save();
+  renderMatchScreen();
+
+  if (switchEnds && !matchOver) showSwitchBanner();
+  if (matchOver) {
+    state.live.matchOver = true;
+    save();
+    showMatchOverBanner();
+  }
+}
+
+function showMatchOverBanner() {
+  const live = state.live;
+  const p1 = state.settings.name || 'You';
+  const p2 = state.currentMatch ? state.currentMatch.opponent : 'Opp';
+  const winner = live.p1Sets > live.p2Sets ? p1 : p2;
+  const scoreStr = live.sets.map(s => s.p1 + '-' + s.p2).join(', ');
+  document.getElementById('mobTitle').textContent = winner + ' wins!';
+  document.getElementById('mobScore').textContent = scoreStr;
+  document.getElementById('matchOverBanner').style.display = 'block';
+  document.getElementById('switchBanner').classList.remove('show');
+}
+
+function dismissMatchOver() {
+  // Allow extra games (e.g. deciding set, social match)
+  if (state.live) state.live.matchOver = false;
+  document.getElementById('matchOverBanner').style.display = 'none';
+  save();
+}
+
+function showSwitchBanner() {
+  const b = document.getElementById('switchBanner');
+  b.classList.add('show');
+  setTimeout(() => b.classList.remove('show'), 3000);
+}
+
+function undoPoint() {
+  if (!state.live) return;
+  const live = state.live;
+  if (!live.pointLog.length) { toast('Nothing to undo'); return; }
+  const last = live.pointLog.pop();
+  // restore full state from scoreBefore — simplest approach
+  // We need to rebuild live from scratch up to pointLog.length - 1
+  // Simpler: store full live snapshot per point
+  if (last._liveSnapshot) {
+    Object.assign(live, JSON.parse(last._liveSnapshot));
+  } else {
+    // fallback: just decrement point
+    if (last.winner === 'p1' && live.p1Points > 0) live.p1Points--;
+    else if (last.winner === 'p2' && live.p2Points > 0) live.p2Points--;
+  }
+  save();
+  renderMatchScreen();
+  toast('Undone');
+}
+
+// We need to snapshot live state into each log entry for undo
+// Patch awardPoint to store snapshot
+const _origAward = awardPoint;
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER MATCH SCREEN
+// ═══════════════════════════════════════════════════════════════
+function renderMatchScreen() {
+  const live = state.live;
+  const p1Name = state.settings.name || 'You';
+  const p2Name = state.currentMatch ? state.currentMatch.opponent : 'Opp';
+  document.getElementById('p1Name').textContent = p1Name;
+  document.getElementById('p2Name').textContent = p2Name;
+  document.getElementById('p2Name').closest('.score-player').querySelector('.point-btn').textContent = '+ ' + (p2Name.split(' ')[0] || 'Opp');
+
+  if (!live) {
+    ['p1Sets','p2Sets','p1Games','p2Games'].forEach(id => document.getElementById(id).textContent = '0');
+    ['p1Points','p2Points'].forEach(id => { const el = document.getElementById(id); el.textContent = '0'; el.className = 'score-points'; });
+    ['p1Meta','p2Meta'].forEach(id => document.getElementById(id).textContent = '');
+    document.getElementById('setHistory').innerHTML = '';
+    document.getElementById('sp1').classList.remove('serving');
+    document.getElementById('sp2').classList.remove('serving');
+    document.getElementById('liveMatchMeta').style.display = 'none';
+    document.getElementById('tiebreakBadge').classList.remove('show');
+    renderStats(); renderHistory();
+    return;
+  }
+
+  // sets & games
+  document.getElementById('p1Sets').textContent = live.p1Sets;
+  document.getElementById('p2Sets').textContent = live.p2Sets;
+  document.getElementById('p1Games').textContent = live.p1Games;
+  document.getElementById('p2Games').textContent = live.p2Games;
+
+  // points
+  const pd = getPointDisplay(live);
+  const p1pEl = document.getElementById('p1Points');
+  const p2pEl = document.getElementById('p2Points');
+  p1pEl.textContent = pd.p1; p2pEl.textContent = pd.p2;
+  p1pEl.className = 'score-points' + (pd.p1Adv ? ' advantage' : '') + (pd.isDeuceState ? ' deuce' : '');
+  p2pEl.className = 'score-points' + (pd.p2Adv ? ' advantage' : '') + (pd.isDeuceState ? ' deuce' : '');
+
+  // serving indicator
+  document.getElementById('sp1').classList.toggle('serving', live.isTiebreak ? live.tbServer === 'p1' : live.server === 'p1');
+  document.getElementById('sp2').classList.toggle('serving', live.isTiebreak ? live.tbServer === 'p2' : live.server === 'p2');
+
+  // meta: side + end
+  const p1Side = getSide(live, 'p1');
+  const p2Side = getSide(live, 'p2');
+  const p1End = getEnd(live, 'p1');
+  const p2End = getEnd(live, 'p2');
+  document.getElementById('p1Meta').textContent = [p1Side, p1End].filter(Boolean).join(' · ');
+  document.getElementById('p2Meta').textContent = [p2Side, p2End].filter(Boolean).join(' · ');
+
+  // tiebreak badge
+  document.getElementById('tiebreakBadge').classList.toggle('show', live.isTiebreak);
+
+  // set history pills
+  const sh = document.getElementById('setHistory');
+  sh.innerHTML = live.sets.map(s => {
+    const won = s.p1 > s.p2;
+    const tb = s.tbScore ? ' (' + (won ? s.tbScore.p1 : s.tbScore.p2) + ')' : '';
+    return '<div class="set-pill ' + (won ? 'won' : '') + '">' + s.p1 + '–' + s.p2 + tb + '</div>';
+  }).join('');
+
+  // match meta
+  if (state.currentMatch) {
+    const mm = document.getElementById('liveMatchMeta');
+    mm.style.display = 'flex';
+    mm.innerHTML = '<span class="meta-tag">' + state.currentMatch.opponent + '</span><span class="meta-tag">' + state.currentMatch.surface + '</span><span class="meta-tag">' + state.currentMatch.format + '</span>';
+  }
+
+  renderStats(); renderHistory();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MATCH MANAGEMENT
+// ═══════════════════════════════════════════════════════════════
+function openNewMatch() {
+  document.getElementById('nm-opp').value = state.currentOpponent || '';
+  document.getElementById('nm-notes').value = '';
+  // pre-fill server from spin result
+  const sw = state.spinWinner;
+  const spinNote = document.getElementById('spinServePrefill');
+  if (sw) {
+    const youPill = document.getElementById('nm-server-you');
+    const oppPill = document.getElementById('nm-server-opp');
+    youPill.classList.toggle('selected', sw === 'p1');
+    oppPill.classList.toggle('selected', sw === 'p2');
+    spinNote.style.display = 'block';
+  } else {
+    document.getElementById('nm-server-you').classList.add('selected');
+    document.getElementById('nm-server-opp').classList.remove('selected');
+    spinNote.style.display = 'none';
+  }
+  openModal('modal-newmatch');
+}
+
+function startNewMatch() {
+  const opp = document.getElementById('nm-opp').value.trim() || 'Opponent';
+  const surface = getSelectedPill('nm-surface');
+  const format = getSelectedPill('nm-format');
+  const notes = document.getElementById('nm-notes').value;
+  const serverPill = getSelectedPill('nm-server');
+  const server = serverPill === 'You' ? 'p1' : 'p2';
+
+  if (opp && opp !== 'Opponent' && !state.players.includes(opp)) state.players.push(opp);
+
+  state.currentOpponent = opp;
+  document.getElementById('spinP2').value = opp;
+  const syncNote = document.getElementById('spinSyncNote');
+  if (syncNote) syncNote.style.display = 'block';
+
+  state.currentMatch = { id: Date.now(), opponent: opp, surface, format, notes, date: new Date().toISOString() };
+  state.live = {
+    server, initialServer: server,
+    p1StartEnd: state.spinEnd || 'north',
+    p1Points: 0, p2Points: 0,
+    p1Games: 0, p2Games: 0,
+    p1Sets: 0, p2Sets: 0,
+    sets: [],
+    totalGames: 0,
+    isTiebreak: false,
+    tbServer: server,
+    tbInitialServer: server,
+    tbPointCount: 0,
+    format,
+    pointLog: []
+  };
+
+  document.getElementById('matchOverBanner').style.display = 'none';
+  closeModal('modal-newmatch');
+  renderMatchScreen();
+  toast('Match vs ' + opp + ' started');
+  save();
+}
+
+function saveCurrentMatch() {
+  if (!state.live && !state.currentMatch) { toast('No active match'); return; }
+  const live = state.live || {};
+  const sets = live.sets || [];
+  // include any open set
+  const allSets = [...sets];
+  if ((live.p1Games || 0) > 0 || (live.p2Games || 0) > 0) {
+    allSets.push({ p1: live.p1Games || 0, p2: live.p2Games || 0 });
+  }
+  let p1Sets = 0, p2Sets = 0;
+  allSets.forEach(s => { if (s.p1 > s.p2) p1Sets++; else if (s.p2 > s.p1) p2Sets++; });
+  if (!p1Sets && !p2Sets) { p1Sets = live.p1Sets || 0; p2Sets = live.p2Sets || 0; }
+
+  const result = p1Sets > p2Sets ? 'W' : (p2Sets > p1Sets ? 'L' : 'D');
+  const scoreStr = allSets.length ? allSets.map(s => s.p1 + '-' + s.p2).join(', ') : (p1Sets + '-' + p2Sets);
+  const match = Object.assign({}, state.currentMatch, {
+    result, scoreStr, p1Sets, p2Sets,
+    pointLog: live.pointLog || []
+  });
+
+  state.matches.unshift(match);
+  state.currentMatch = null;
+  state.live = null;
+  state.spinWinner = null;
+  state.spinEnd = null;
+  const syncNote = document.getElementById('spinSyncNote');
+  if (syncNote) syncNote.style.display = 'none';
+  renderMatchScreen();
+  save();
+  toast('Match saved — ' + result);
+}
+
+function resetScore() {
+  if (state.live && !confirm('Reset live score? Point log will be lost.')) return;
+  state.live = null;
+  state.currentMatch = null;
+  document.getElementById('matchOverBanner').style.display = 'none';
+  renderMatchScreen();
+  save();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER STATS + HISTORY
+// ═══════════════════════════════════════════════════════════════
+function renderStats() {
+  const wins = state.matches.filter(m => m.result === 'W').length;
+  const losses = state.matches.filter(m => m.result === 'L').length;
+  const total = wins + losses;
+  document.getElementById('statWins').textContent = wins;
+  document.getElementById('statLosses').textContent = losses;
+  document.getElementById('statWinPct').textContent = total ? Math.round(wins/total*100)+'%' : '—';
+}
+
+function renderHistory() {
+  const el = document.getElementById('matchHistory');
+  if (!state.matches.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🎾</div><p>No matches yet.<br>Start a new match above.</p></div>';
+    return;
+  }
+  el.innerHTML = state.matches.slice(0,30).map((m,i) => {
+    const d = new Date(m.date);
+    const ds = d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    const pts = m.pointLog ? m.pointLog.length : 0;
+    return '<div class="match-row" onclick="openMatchLog(' + i + ')">'
+      + '<div class="match-result ' + m.result + '">' + m.result + '</div>'
+      + '<div class="match-info">'
+      + '<div class="match-opp">vs ' + m.opponent + '</div>'
+      + '<div class="match-score-str">' + m.scoreStr + ' · ' + m.surface + (pts ? ' · ' + pts + ' pts' : '') + '</div>'
+      + '</div>'
+      + '<div class="match-date-str">' + ds + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MATCH LOG MODAL
+// ═══════════════════════════════════════════════════════════════
+let _logMatchIndex = null;
+
+function openMatchLog(idx) {
+  _logMatchIndex = idx;
+  const m = state.matches[idx];
+  const p1 = state.settings.name || 'You';
+  const p2 = m.opponent;
+  document.getElementById('ml-title').textContent = p1 + ' vs ' + p2;
+  document.getElementById('ml-summary').textContent =
+    m.scoreStr + ' · ' + m.surface + ' · ' + new Date(m.date).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+
+  const log = m.pointLog || [];
+  const tbody = document.getElementById('ml-tbody');
+  if (!log.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">No point-by-point log for this match.</td></tr>';
+  } else {
+    tbody.innerHTML = log.map(pt => {
+      const serverName = pt.server === 'p1' ? p1 : p2;
+      const wonName = pt.winner === 'p1' ? p1 : p2;
+      const cls = pt.winner === 'p1' ? 'point-won-you' : 'point-won-opp';
+      const gameCls = pt.gameWon ? 'game-won' : '';
+      return '<tr class="' + gameCls + '">'
+        + '<td>' + pt.n + '</td>'
+        + '<td>' + serverName.split(' ')[0] + '</td>'
+        + '<td class="' + cls + '">' + wonName.split(' ')[0] + '</td>'
+        + '<td>' + pt.gameScore + '</td>'
+        + '<td>' + pt.setScore + '</td>'
+        + '<td>' + pt.matchScore + '</td>'
+        + '</tr>';
+    }).join('');
+  }
+  // Reset delete buttons to initial state
+  document.getElementById('deleteMatchBtn').style.display = 'inline-flex';
+  document.getElementById('deleteMatchConfirmBtn').style.display = 'none';
+  openModal('modal-matchlog');
+}
+
+function exportCSV() {
+  if (_logMatchIndex === null) return;
+  const m = state.matches[_logMatchIndex];
+  const p1 = state.settings.name || 'You';
+  const p2 = m.opponent;
+  const log = m.pointLog || [];
+  const rows = [['Point','Server','Winner','Game Score','Set Score','Match Score','Type','Timestamp']];
+  log.forEach(pt => {
+    rows.push([
+      pt.n,
+      pt.server === 'p1' ? p1 : p2,
+      pt.winner === 'p1' ? p1 : p2,
+      pt.gameScore, pt.setScore, pt.matchScore,
+      pt.type || '',
+      new Date(pt.ts).toISOString()
+    ]);
+  });
+  const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'loeuf_' + p1 + '_vs_' + p2 + '_' + new Date(m.date).toISOString().slice(0,10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('CSV exported');
+}
+
+function confirmDeleteMatch() {
+  // Two-step: first tap shows Confirm, second tap deletes — avoids iOS confirm() bug
+  const btn = document.getElementById('deleteMatchBtn');
+  const confirmBtn = document.getElementById('deleteMatchConfirmBtn');
+  btn.style.display = 'none';
+  confirmBtn.style.display = 'inline-flex';
+  // Auto-reset after 4s if not confirmed
+  setTimeout(() => {
+    btn.style.display = 'inline-flex';
+    confirmBtn.style.display = 'none';
+  }, 4000);
+}
+
+function deleteMatch() {
+  if (_logMatchIndex === null) return;
+  state.matches.splice(_logMatchIndex, 1);
+  _logMatchIndex = null;
+  save();
+  renderStats();
+  renderHistory();
+  closeModal('modal-matchlog');
+  // Reset buttons for next open
+  document.getElementById('deleteMatchBtn').style.display = 'inline-flex';
+  document.getElementById('deleteMatchConfirmBtn').style.display = 'none';
+  toast('Match deleted');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  load();
+  document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  document.getElementById('g-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('s-name').value = state.settings.name || 'You';
+  if (state.currentOpponent) document.getElementById('spinP2').value = state.currentOpponent;
+  renderMatchScreen();
+  renderGearList();
+  renderRallyLog();
+  renderServeLog();
+  renderPlayerList();
+});
+
+// ═══════════════════════════════════════════════════════════════
+// NAV / MODALS / PILLS / TOAST
+// ═══════════════════════════════════════════════════════════════
+function switchScreen(id, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-backdrop').forEach(b => {
+  b.addEventListener('click', e => { if (e.target === b) b.classList.remove('open'); });
+});
+function selectPill(el, groupId) {
+  document.querySelectorAll('#' + groupId + ' .pill').forEach(p => p.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function getSelectedPill(groupId) {
+  const el = document.querySelector('#' + groupId + ' .pill.selected');
+  return el ? el.textContent.trim() : '';
+}
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PLAYER LIST
+// ═══════════════════════════════════════════════════════════════
+function renderPlayerList() {
+  const el = document.getElementById('playerList');
+  if (!state.players.length) { el.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:8px 0 4px">No opponents added yet.</div>'; return; }
+  el.innerHTML = state.players.map((p, i) =>
+    '<div class="player-row" id="prow-' + i + '">'
+    + '<span class="player-name-display">' + p + '</span>'
+    + '<button class="icon-btn" onclick="editPlayerInline(' + i + ')">✏️</button>'
+    + '<button class="icon-btn del" onclick="deletePlayer(' + i + ')">✕</button>'
+    + '</div>'
+  ).join('');
+}
+function addPlayer() {
+  const input = document.getElementById('newPlayerInput');
+  const name = input.value.trim();
+  if (!name) return;
+  if (state.players.includes(name)) { toast('Already in list'); return; }
+  state.players.push(name); input.value = '';
+  save(); renderPlayerList();
+}
+function deletePlayer(i) { state.players.splice(i,1); save(); renderPlayerList(); }
+function editPlayerInline(i) {
+  const row = document.getElementById('prow-' + i);
+  row.innerHTML = '<input class="player-edit-input" id="pedit-' + i + '" value="' + state.players[i] + '" onkeydown="if(event.key===\'Enter\')savePlayerInline(' + i + ');if(event.key===\'Escape\')renderPlayerList()">'
+    + '<button class="icon-btn" onclick="savePlayerInline(' + i + ')">✓</button>'
+    + '<button class="icon-btn del" onclick="renderPlayerList()">✕</button>';
+  document.getElementById('pedit-' + i).focus();
+}
+function savePlayerInline(i) {
+  const val = document.getElementById('pedit-' + i).value.trim();
+  if (!val) return;
+  state.players[i] = val; save(); renderPlayerList();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// OPPONENT DROPDOWNS
+// ═══════════════════════════════════════════════════════════════
+function buildOppOptions(ddId, filter) {
+  const dd = document.getElementById(ddId);
+  const filtered = filter ? state.players.filter(p => p.toLowerCase().includes(filter.toLowerCase())) : state.players;
+  if (!filtered.length) { dd.classList.remove('open'); return; }
+  const handler = ddId === 'oppDropdown' ? 'selectOpp' : 'selectSpinOpp';
+  dd.innerHTML = filtered.map(p => '<div class="opp-option" onmousedown="' + handler + '(\'' + p.replace(/'/g,"\\'") + '\')">' + p + '</div>').join('');
+  dd.classList.add('open');
+}
+function openOppDropdown() { buildOppOptions('oppDropdown', ''); }
+function filterOppDropdown() { buildOppOptions('oppDropdown', document.getElementById('nm-opp').value); }
+function closeOppDropdownDelayed() { setTimeout(() => document.getElementById('oppDropdown').classList.remove('open'), 200); }
+function selectOpp(name) { document.getElementById('nm-opp').value = name; document.getElementById('oppDropdown').classList.remove('open'); setCurrentOpponent(name); }
+function openSpinDropdown() { buildOppOptions('spinOppDropdown', ''); }
+function filterSpinDropdown() { buildOppOptions('spinOppDropdown', document.getElementById('spinP2').value); }
+function closeSpinDropdownDelayed() { setTimeout(() => document.getElementById('spinOppDropdown').classList.remove('open'), 200); }
+function selectSpinOpp(name) { document.getElementById('spinP2').value = name; document.getElementById('spinOppDropdown').classList.remove('open'); setCurrentOpponent(name); }
+function setCurrentOpponent(name) {
+  if (!name || !name.trim()) return;
+  state.currentOpponent = name.trim();
+  document.getElementById('spinP2').value = state.currentOpponent;
+  document.getElementById('nm-opp').value = state.currentOpponent;
+  const note = document.getElementById('spinSyncNote');
+  if (note) note.style.display = state.currentMatch ? 'block' : 'none';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RACQUET SPIN
+// ═══════════════════════════════════════════════════════════════
+// Stores toss state across the two steps
+let _spinState = { winner: null, winnerName: null, loserName: null };
+
+function spinRacquet() {
+  const container = document.getElementById('racquetContainer');
+  const p1 = state.settings.name || 'You';
+  const p2raw = document.getElementById('spinP2').value.trim();
+  const p2 = p2raw || 'Opponent';
+  if (p2raw) setCurrentOpponent(p2raw);
+
+  // reset all panels
+  resetSpin(true);
+
+  container.classList.remove('spinning');
+  void container.offsetWidth;
+  container.classList.add('spinning');
+
+  setTimeout(() => {
+    // determine toss winner randomly
+    const winnerSide = Math.random() < 0.5 ? 'p1' : 'p2';
+    _spinState.winner = winnerSide;
+    _spinState.winnerName = winnerSide === 'p1' ? p1 : p2;
+    _spinState.loserName  = winnerSide === 'p1' ? p2 : p1;
+
+    // Step 1 result: just declare winner
+    const result = document.getElementById('spinResult');
+    result.textContent = _spinState.winnerName + ' wins the toss';
+    result.classList.remove('revealed');
+    void result.offsetWidth;
+    result.classList.add('revealed');
+
+    // Step 2: show choice panel — guard against iOS ghost taps for 400ms
+    const choicePanel = document.getElementById('spinChoicePanel');
+    document.getElementById('spinChoiceLabel').textContent =
+      _spinState.winnerName + ', what do you choose?';
+    choicePanel.style.display = 'block';
+    choicePanel.classList.add('spin-choice-guard');
+    document.getElementById('spinHint').style.display = 'none';
+    setTimeout(() => choicePanel.classList.remove('spin-choice-guard'), 500);
+  }, 1120);
+}
+
+function showOutcomePanel() {
+  const p = document.getElementById('spinOutcomePanel');
+  p.style.display = 'block';
+  p.classList.add('spin-choice-guard');
+  setTimeout(() => p.classList.remove('spin-choice-guard'), 500);
+}
+
+function spinChoose(choice) {
+  const winner = _spinState.winnerName;
+  const loser  = _spinState.loserName;
+  const winnerSide = _spinState.winner;
+
+  document.getElementById('spinChoicePanel').style.display = 'none';
+  // Clear the "X wins the toss" line — outcome panel takes over
+  const spinResult = document.getElementById('spinResult');
+  spinResult.classList.remove('revealed');
+  spinResult.textContent = '';
+  state.spinWinner = null;
+
+  if (choice === 'serve') {
+    state.spinWinner = winnerSide;
+    document.getElementById('spinOutcomeLine1').textContent = winner + ' serves first';
+    document.getElementById('spinOutcomeLine2').textContent = '';
+    showOutcomePanel();
+    const loserSide = winnerSide === 'p1' ? 'p2' : 'p1';
+    showEndPanel(loser, loserSide);
+    save();
+  } else if (choice === 'receive') {
+    state.spinWinner = winnerSide === 'p1' ? 'p2' : 'p1';
+    document.getElementById('spinOutcomeLine1').textContent = winner + ' receives first';
+    document.getElementById('spinOutcomeLine2').textContent = '';
+    showOutcomePanel();
+    const loserSide = winnerSide === 'p1' ? 'p2' : 'p1';
+    showEndPanel(loser, loserSide);
+    save();
+  } else if (choice === 'end') {
+    // Winner picks end first, then loser picks serve/receive
+    document.getElementById('spinOutcomeLine1').textContent = winner + ' picks end';
+    document.getElementById('spinOutcomeLine2').textContent = '';
+    showOutcomePanel();
+    // Store loser info so spinEndChoose can trigger the serve/receive prompt after
+    _spinState.pendingLoser = loser;
+    _spinState.pendingLoserPanel = true;
+    showEndPanel(winner, winnerSide);
+    // spinWinner stays null until loser decides serve/receive
+  }
+}
+
+function spinLoserChoose(choice) {
+  const loser = _spinState.loserName;
+  const loserSide = _spinState.winner === 'p1' ? 'p2' : 'p1';
+
+  document.getElementById('spinLoserPanel').style.display = 'none';
+
+  if (choice === 'serve') {
+    state.spinWinner = loserSide;
+    document.getElementById('spinOutcomeLine2').textContent = loser + ' serves first';
+  } else {
+    state.spinWinner = loserSide === 'p1' ? 'p2' : 'p1'; // loser receives → other player serves
+    document.getElementById('spinOutcomeLine2').textContent = loser + ' receives first';
+  }
+  save();
+}
+
+function showEndPanel(pickerName, pickerSide) {
+  // store who is picking so spinEndChoose knows whose end to record
+  _spinState.endPicker = pickerSide;
+  document.getElementById('spinEndLabel').textContent = pickerName + ', pick your end';
+  const p = document.getElementById('spinEndPanel');
+  p.style.display = 'block';
+  p.classList.add('spin-choice-guard');
+  setTimeout(() => p.classList.remove('spin-choice-guard'), 500);
+}
+
+function spinEndChoose(end) {
+  const pickerSide = _spinState.endPicker; // 'p1' or 'p2'
+  const pickerName = pickerSide === 'p1' ? (state.settings.name || 'You') : (document.getElementById('spinP2').value || 'Opponent');
+  const endLabel = end === 'north' ? 'North' : 'South';
+  document.getElementById('spinEndPanel').style.display = 'none';
+  // p1StartEnd: if p1 picks end, use directly; if p2 picks, p1 gets opposite
+  state.spinEnd = pickerSide === 'p1' ? end : (end === 'north' ? 'south' : 'north');
+  // Show both players' ends for clarity
+  const p1Name = state.settings.name || 'You';
+  const p2Name = document.getElementById('spinP2').value || 'Opponent';
+  const p1End = state.spinEnd === 'north' ? 'North' : 'South';
+  const p2End = p1End === 'North' ? 'South' : 'North';
+  document.getElementById('spinOutcomeLine2').textContent = p1Name + ': ' + p1End + '  ·  ' + p2Name + ': ' + p2End;
+  save();
+  // If winner chose end first, now prompt the loser to pick serve/receive
+  if (_spinState.pendingLoserPanel) {
+    _spinState.pendingLoserPanel = false;
+    const loser = _spinState.pendingLoser;
+    document.getElementById('spinLoserLabel').textContent = loser + ', serve or receive?';
+    const loserPanel = document.getElementById('spinLoserPanel');
+    setTimeout(() => {
+      loserPanel.style.display = 'block';
+      loserPanel.classList.add('spin-choice-guard');
+      setTimeout(() => loserPanel.classList.remove('spin-choice-guard'), 400);
+    }, 150);
+  }
+}
+
+function resetSpin(silent) {
+  _spinState = { winner: null, winnerName: null, loserName: null };
+  const result = document.getElementById('spinResult');
+  result.textContent = '';
+  result.classList.remove('revealed');
+  document.getElementById('spinChoicePanel').style.display = 'none';
+  document.getElementById('spinOutcomePanel').style.display = 'none';
+  document.getElementById('spinLoserPanel').style.display = 'none';
+  document.getElementById('spinEndPanel').style.display = 'none';
+  document.getElementById('spinHint').style.display = 'block';
+  if (!silent) {
+    // also clear spinWinner so New Match goes back to manual selection
+    state.spinWinner = null;
+    save();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════════════════════
+function openSettings() {
+  document.getElementById('s-name').value = state.settings.name || 'You';
+  const ntrp = state.settings.ntrp || '4.0';
+  document.querySelectorAll('#s-ntrp .pill').forEach(p => p.classList.toggle('selected', p.textContent.trim() === ntrp));
+  renderPlayerList();
+  openModal('modal-settings');
+}
+function saveSettings() {
+  state.settings.name = document.getElementById('s-name').value.trim() || 'You';
+  state.settings.ntrp = getSelectedPill('s-ntrp');
+  save(); renderMatchScreen();
+  closeModal('modal-settings');
+  toast('Settings saved');
+}
+function clearAllData() {
+  if (!confirm('Clear all data? This cannot be undone.')) return;
+  localStorage.removeItem('loeuf_v2');
+  state = { settings:{name:'You',ntrp:'4.0'}, players:[], matches:[], gear:[], currentMatch:null, currentOpponent:null, live:null, spinWinner:null, rallyLog:[], serveLog:[], editingGearId:null };
+  document.getElementById('spinP2').value = '';
+  document.getElementById('spinSyncNote').style.display = 'none';
+  renderMatchScreen(); renderGearList(); renderRallyLog(); renderServeLog(); renderPlayerList();
+  closeModal('modal-settings');
+  toast('All data cleared');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GEAR LOG
+// ═══════════════════════════════════════════════════════════════
+function gearStatus(gear) {
+  if (!gear.date || !gear.interval) return { label: '—', cls: '' };
+  const weeksAgo = (new Date() - new Date(gear.date)) / (1000*60*60*24*7);
+  const interval = parseInt(gear.interval);
+  if (weeksAgo < interval * 0.75) return { label: 'Good', cls: 'ok' };
+  if (weeksAgo < interval) return { label: 'Due soon', cls: 'due' };
+  return { label: 'Overdue', cls: 'overdue' };
+}
+const GEAR_ICONS = { Racquet:'🎾', String:'🪢', Shoes:'👟', Bag:'🎒', Other:'📦' };
+function renderGearList() {
+  const el = document.getElementById('gearList');
+  if (!state.gear.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">🎾</div><p>No gear logged yet.</p></div>'; return; }
+  el.innerHTML = state.gear.map(g => {
+    const s = gearStatus(g);
+    const sub = [g.string, g.date ? 'Restrung ' + new Date(g.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''].filter(Boolean).join(' · ');
+    return '<div class="gear-row" onclick="openGearDetail(\'' + g.id + '\')">'
+      + '<div class="gear-icon">' + (GEAR_ICONS[g.type]||'📦') + '</div>'
+      + '<div class="gear-info"><div class="gear-name">' + g.name + '</div><div class="gear-sub">' + (sub||g.type) + '</div></div>'
+      + (s.label !== '—' ? '<div class="gear-badge ' + s.cls + '">' + s.label + '</div>' : '')
+      + '</div>';
+  }).join('');
+}
+function openAddGear() {
+  state.editingGearId = null;
+  document.getElementById('gearModalTitle').textContent = 'Add Gear';
+  ['g-name','g-string','g-interval','g-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('g-date').value = new Date().toISOString().split('T')[0];
+  document.querySelectorAll('#g-type .pill').forEach((p,i) => p.classList.toggle('selected', i===0));
+  openModal('modal-addgear');
+}
+function saveGear() {
+  const name = document.getElementById('g-name').value.trim();
+  if (!name) { toast('Enter a name'); return; }
+  const gear = { id: state.editingGearId || Date.now().toString(), name, type: getSelectedPill('g-type'),
+    string: document.getElementById('g-string').value.trim(), date: document.getElementById('g-date').value,
+    interval: document.getElementById('g-interval').value, notes: document.getElementById('g-notes').value.trim() };
+  if (state.editingGearId) { const idx = state.gear.findIndex(g => g.id === state.editingGearId); if (idx>=0) state.gear[idx]=gear; }
+  else state.gear.unshift(gear);
+  save(); renderGearList(); closeModal('modal-addgear'); closeModal('modal-geardetail'); toast('Gear saved');
+}
+function openGearDetail(id) {
+  const g = state.gear.find(x => x.id === id); if (!g) return;
+  state.editingGearId = id;
+  document.getElementById('gd-title').textContent = g.name;
+  const s = gearStatus(g);
+  document.getElementById('gd-body').innerHTML =
+    '<div style="margin-bottom:6px"><b>Type:</b> ' + g.type + '</div>'
+    + (g.string ? '<div style="margin-bottom:6px"><b>String:</b> ' + g.string + '</div>' : '')
+    + (g.date ? '<div style="margin-bottom:6px"><b>Restrung:</b> ' + new Date(g.date).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) + '</div>' : '')
+    + (g.interval ? '<div style="margin-bottom:6px"><b>Restring every:</b> ' + g.interval + ' weeks → ' + s.label + '</div>' : '')
+    + (g.notes ? '<div style="margin-top:10px">' + g.notes + '</div>' : '');
+  openModal('modal-geardetail');
+}
+function editGear() {
+  const g = state.gear.find(x => x.id === state.editingGearId); if (!g) return;
+  document.getElementById('gearModalTitle').textContent = 'Edit Gear';
+  document.getElementById('g-name').value = g.name;
+  document.getElementById('g-string').value = g.string||'';
+  document.getElementById('g-date').value = g.date||'';
+  document.getElementById('g-interval').value = g.interval||'';
+  document.getElementById('g-notes').value = g.notes||'';
+  document.querySelectorAll('#g-type .pill').forEach(p => p.classList.toggle('selected', p.textContent.trim()===g.type));
+  closeModal('modal-geardetail'); openModal('modal-addgear');
+}
+function deleteGear() {
+  if (!state.editingGearId) return;
+  state.gear = state.gear.filter(g => g.id !== state.editingGearId);
+  save(); renderGearList(); closeModal('modal-geardetail'); toast('Deleted');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RALLY COUNTER
+// ═══════════════════════════════════════════════════════════════
+let audioCtx=null,analyser=null,micStream=null,isListening=false,rallyCount=0,listenRAF=null;
+let threshold=18,lastBounce=0,waveBars=[];
+function updateThreshold(v){threshold=parseInt(v);document.getElementById('threshVal').textContent=v;}
+async function toggleListen(){
+  if(isListening){stopListen();return;}
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+    micStream=stream;audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    const src=audioCtx.createMediaStreamSource(stream);
+    analyser=audioCtx.createAnalyser();analyser.fftSize=256;src.connect(analyser);
+    isListening=true;document.getElementById('listenCircle').classList.add('listening');
+    document.getElementById('listenLabel').textContent='listening…';
+    document.getElementById('listenStatus').textContent='Active — mic on';
+    waveBars=document.querySelectorAll('.wave-bar');listenLoop();
+  }catch(e){toast('Mic access denied');}
+}
+function stopListen(){
+  isListening=false;if(listenRAF)cancelAnimationFrame(listenRAF);
+  if(micStream)micStream.getTracks().forEach(t=>t.stop());
+  if(audioCtx)audioCtx.close();
+  document.getElementById('listenCircle').classList.remove('listening');
+  document.getElementById('listenLabel').textContent='tap to start';
+  document.getElementById('listenStatus').textContent='Idle';
+  waveBars.forEach(b=>{b.style.height='8px';b.classList.remove('active');});
+}
+function listenLoop(){
+  if(!isListening)return;
+  const data=new Uint8Array(analyser.frequencyBinCount);
+  analyser.getByteFrequencyData(data);
+  const avg=data.reduce((a,b)=>a+b,0)/data.length;
+  waveBars.forEach((b,i)=>{const h=4+(data[i*2]||0)/255*28;b.style.height=h+'px';b.classList.toggle('active',h>14);});
+  const now=Date.now();
+  if(avg>threshold&&(now-lastBounce)>350){
+    lastBounce=now;rallyCount++;
+    document.getElementById('rallyCount').textContent=rallyCount;
+    const c=document.getElementById('listenCircle');c.classList.remove('pulse');void c.offsetWidth;c.classList.add('pulse');
+  }
+  listenRAF=requestAnimationFrame(listenLoop);
+}
+function resetRally(){rallyCount=0;document.getElementById('rallyCount').textContent='0';}
+function logRally(){
+  if(!rallyCount){toast('Nothing to log');return;}
+  state.rallyLog.unshift({count:rallyCount,ts:Date.now()});save();renderRallyLog();toast('Rally of '+rallyCount+' logged');resetRally();
+}
+function renderRallyLog(){
+  const el=document.getElementById('rallyLog');
+  if(!state.rallyLog||!state.rallyLog.length){el.innerHTML='';return;}
+  el.innerHTML='<div style="font-family:\'DM Mono\',monospace;font-size:11px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.07em">Recent Rallies</div>'
+    +state.rallyLog.slice(0,10).map(r=>{
+      const d=new Date(r.ts);
+      return '<div class="serve-row"><span class="serve-mph">'+r.count+' hits</span><span>'+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+'</span></div>';
+    }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SERVE SPEED
+// ═══════════════════════════════════════════════════════════════
+let cameraActive=false,serveStream=null,serveRAF=null,prevFrameData=null,lastServeTime=0;
+async function toggleCamera(){
+  if(cameraActive){stopCamera();return;}
+  try{
+    serveStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:640},height:{ideal:480}},audio:false});
+    const video=document.getElementById('serveVideo');video.srcObject=serveStream;await video.play();
+    document.getElementById('cameraWrap').style.display='block';
+    document.getElementById('cameraPlaceholder').style.display='none';
+    document.getElementById('cameraBtn').textContent='Stop Camera';
+    document.getElementById('cameraPermError').style.display='none';
+    document.getElementById('cameraPlaceholderMsg').textContent='Camera not started';
+    cameraActive=true;serveDetectLoop();
+  } catch(e) {
+    let msg = 'Camera access denied';
+    if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
+      document.getElementById('cameraPermError').style.display = 'block';
+      document.getElementById('cameraPlaceholderMsg').textContent = 'Camera permission required';
+      msg = 'Camera denied — see instructions below';
+    } else if (e.name === 'NotFoundError') {
+      msg = 'No camera found on this device';
+    } else if (e.name === 'NotReadableError') {
+      msg = 'Camera in use by another app';
+    }
+    toast(msg);
+  }
+}
+function stopCamera(){
+  cameraActive=false;if(serveRAF)cancelAnimationFrame(serveRAF);
+  if(serveStream)serveStream.getTracks().forEach(t=>t.stop());
+  document.getElementById('cameraWrap').style.display='none';
+  document.getElementById('cameraPlaceholder').style.display='block';
+  document.getElementById('cameraBtn').textContent='Start Camera';
+  document.getElementById('liveSpeed').textContent='—';prevFrameData=null;
+}
+function serveDetectLoop(){
+  if(!cameraActive)return;
+  const video=document.getElementById('serveVideo'),canvas=document.getElementById('serveCanvas'),ctx=canvas.getContext('2d');
+  canvas.width=video.videoWidth||320;canvas.height=video.videoHeight||240;
+  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+  const frame=ctx.getImageData(0,0,canvas.width,canvas.height);
+  if(prevFrameData){
+    const motion=detectMotion(prevFrameData,frame);
+    if(motion.magnitude>8&&(Date.now()-lastServeTime)>1500){
+      const courtFt=parseFloat(document.getElementById('courtWidthFt').value)||27;
+      const speedMph=Math.round((motion.magnitude/(canvas.width/courtFt))*30/1.467);
+      const clamped=Math.max(30,Math.min(speedMph,145));
+      document.getElementById('liveSpeed').textContent=clamped;
+      state.serveLog.unshift({mph:clamped,ts:Date.now()});if(state.serveLog.length>50)state.serveLog.pop();
+      save();renderServeLog();lastServeTime=Date.now();
+    }
+  }
+  prevFrameData=frame;serveRAF=requestAnimationFrame(serveDetectLoop);
+}
+function detectMotion(prev,curr){
+  let sx=0,sy=0,count=0;const step=8;
+  for(let y=0;y<curr.height;y+=step)for(let x=0;x<curr.width;x+=step){
+    const i=(y*curr.width+x)*4;
+    const diff=Math.abs(curr.data[i]-prev.data[i])+Math.abs(curr.data[i+1]-prev.data[i+1])+Math.abs(curr.data[i+2]-prev.data[i+2]);
+    if(diff>30){sx+=x;sy+=y;count++;}
+  }
+  if(count<3)return{magnitude:0};
+  const cx=sx/count,cy=sy/count;
+  return{magnitude:Math.sqrt(cx*cx+cy*cy)/(curr.width/20)};
+}
+function renderServeLog(){
+  const el=document.getElementById('serveLog');
+  if(!state.serveLog||!state.serveLog.length){el.innerHTML='<div style="font-family:\'DM Mono\',monospace;font-size:12px;color:var(--muted);text-align:center;padding:12px">No serves recorded yet</div>';return;}
+  const avg=Math.round(state.serveLog.reduce((a,s)=>a+s.mph,0)/state.serveLog.length);
+  const max=Math.max(...state.serveLog.map(s=>s.mph));
+  el.innerHTML='<div style="display:flex;gap:12px;margin-bottom:10px">'
+    +'<span style="font-family:\'DM Mono\',monospace;font-size:11px;color:var(--muted)">Avg: <b style="color:var(--text)">'+avg+' mph</b></span>'
+    +'<span style="font-family:\'DM Mono\',monospace;font-size:11px;color:var(--muted)">Max: <b style="color:var(--accent2)">'+max+' mph</b></span>'
+    +'</div>'
+    +state.serveLog.slice(0,15).map(s=>{
+      const d=new Date(s.ts);const fast=s.mph>=80;
+      return '<div class="serve-row"><span class="serve-mph'+(fast?' fast':'')+'">'+s.mph+' mph</span><span>'+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',second:'2-digit'})+'</span></div>';
+    }).join('');
+}
+function clearServeLog(){state.serveLog=[];save();renderServeLog();}
+</script>
+</body>
+</html>
